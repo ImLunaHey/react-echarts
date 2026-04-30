@@ -73,7 +73,7 @@ The container defaults to `width: 100%; height: 100%` — give it a parent with 
 <Chart option={{ ..., series: [{ type: 'custom',        renderItem }] }} />
 ```
 
-For `map`, register a geoJSON once via `echarts.registerMap('name', geoJson)` before referencing it in `series[].map`. Every type above has a dedicated story — see the **Chart types** sidebar.
+For `map`, register either a geoJSON or an SVG once via `echarts.registerMap('name', payload)` before referencing it in `series[].map`. Use geoJSON for geographic maps; use `{svg: '<svg>...</svg>'}` to turn any diagram (floor plans, anatomy, factory layouts, sports fields) into an interactive choropleth. The Storybook ships both a real world choropleth and the classic ECharts beef-cuts SVG demo — see the **Chart types / Map** sidebar.
 
 ## Props
 
