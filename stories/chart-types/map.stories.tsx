@@ -8,157 +8,137 @@ import {
   controlledChartDefaults,
 } from '../controlled-chart';
 
+const WORLD_GEOJSON_URL =
+  'https://cdn.jsdelivr.net/gh/johan/world.geo.json@master/countries.geo.json';
+
+let registered: Promise<void> | null = null;
+
 /**
- * Inline geoJSON of four simplified country-like polygons. ECharts v5
- * no longer ships world/region maps — register your own geoJSON via
- * `echarts.registerMap(name, geoJson)` first, then reference the same
- * `name` in the series.
+ * Fetch and register a world countries geoJSON exactly once. Subsequent
+ * stories that need it await the same promise. ECharts' types don't
+ * include `registerMap`, so we cast to access it.
  */
-const DEMO_REGIONS = {
-  type: 'FeatureCollection' as const,
-  features: [
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Argonia' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [
-          [
-            [-110, 25],
-            [-80, 25],
-            [-80, 55],
-            [-110, 55],
-            [-110, 25],
-          ],
-        ],
-      },
-    },
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Brivia' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [
-          [
-            [-70, 25],
-            [-30, 25],
-            [-30, 55],
-            [-70, 55],
-            [-70, 25],
-          ],
-        ],
-      },
-    },
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Cardonia' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [
-          [
-            [-110, -10],
-            [-80, -10],
-            [-80, 20],
-            [-110, 20],
-            [-110, -10],
-          ],
-        ],
-      },
-    },
-    {
-      type: 'Feature' as const,
-      properties: { name: 'Daleria' },
-      geometry: {
-        type: 'Polygon' as const,
-        coordinates: [
-          [
-            [-70, -10],
-            [-30, -10],
-            [-30, 20],
-            [-70, 20],
-            [-70, -10],
-          ],
-        ],
-      },
-    },
-  ],
+const ensureWorldRegistered = (): Promise<void> => {
+  if (registered) return registered;
+  registered = fetch(WORLD_GEOJSON_URL)
+    .then((r) => r.json())
+    .then((geo) => {
+      (echarts as unknown as { registerMap: (name: string, geo: unknown) => void }).registerMap(
+        'world',
+        geo,
+      );
+    });
+  return registered;
 };
 
-let registered = false;
-const ensureRegistered = () => {
-  if (registered) return;
-  // ECharts' types don't include `registerMap` on the namespace export, but
-  // it exists at runtime. Cast to access it.
-  (echarts as unknown as { registerMap: (name: string, geo: unknown) => void }).registerMap(
-    'demo-regions',
-    DEMO_REGIONS,
-  );
-  registered = true;
-};
-
-const RegisteredMap = (args: Parameters<typeof ControlledChart>[0]) => {
+const RegisteredWorldMap = (args: Parameters<typeof ControlledChart>[0]) => {
   const [ready, setReady] = useState(false);
   useEffect(() => {
-    ensureRegistered();
-    setReady(true);
+    ensureWorldRegistered().then(() => setReady(true));
   }, []);
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <div
+        style={{
+          width: args.width ?? 720,
+          height: args.height ?? 420,
+          display: 'grid',
+          placeItems: 'center',
+          fontFamily: 'monospace',
+          fontSize: 12,
+          color: '#888',
+        }}
+      >
+        Loading world map…
+      </div>
+    );
+  }
   return <ControlledChart {...args} />;
 };
 
-const meta: Meta<typeof RegisteredMap> = {
+const meta: Meta<typeof RegisteredWorldMap> = {
   title: 'Chart types/Map',
-  component: RegisteredMap,
+  component: RegisteredWorldMap,
   argTypes: controlledChartArgTypes,
-  args: { ...controlledChartDefaults, width: 720, height: 420 },
+  args: { ...controlledChartDefaults, width: 800, height: 460 },
   parameters: {
     docs: {
       description: {
         component:
-          'ECharts v5 no longer ships built-in maps. Register a geoJSON with `echarts.registerMap("name", geoJson)` once, then reference the same `name` in the series. This story uses a tiny inline geoJSON of four made-up regions to keep the demo self-contained.',
+          'ECharts v5 no longer ships built-in maps. This story fetches a public world-countries geoJSON from jsDelivr, registers it once via `echarts.registerMap("world", geoJson)`, and uses it for every map demo. Pass the registered name via `series[].map`.',
       },
     },
   },
 };
 
 export default meta;
-type Story = StoryObj<typeof RegisteredMap>;
+type Story = StoryObj<typeof RegisteredWorldMap>;
 
-const populations: Array<{ name: string; value: number }> = [
-  { name: 'Argonia', value: 41_200_000 },
-  { name: 'Brivia', value: 18_700_000 },
-  { name: 'Cardonia', value: 9_400_000 },
-  { name: 'Daleria', value: 27_900_000 },
+// Sample data — names match the geoJSON's `properties.name`.
+const populationMillions = [
+  { name: 'China', value: 1412 },
+  { name: 'India', value: 1408 },
+  { name: 'United States of America', value: 333 },
+  { name: 'Indonesia', value: 274 },
+  { name: 'Pakistan', value: 231 },
+  { name: 'Nigeria', value: 219 },
+  { name: 'Brazil', value: 215 },
+  { name: 'Bangladesh', value: 169 },
+  { name: 'Russia', value: 144 },
+  { name: 'Mexico', value: 127 },
+  { name: 'Japan', value: 125 },
+  { name: 'Ethiopia', value: 121 },
+  { name: 'Philippines', value: 115 },
+  { name: 'Egypt', value: 109 },
+  { name: 'Vietnam', value: 98 },
+  { name: 'Germany', value: 84 },
+  { name: 'Turkey', value: 84 },
+  { name: 'Iran', value: 87 },
+  { name: 'United Kingdom', value: 67 },
+  { name: 'France', value: 67 },
+  { name: 'Italy', value: 59 },
+  { name: 'South Africa', value: 60 },
+  { name: 'Canada', value: 39 },
+  { name: 'Australia', value: 26 },
+  { name: 'Argentina', value: 46 },
+  { name: 'Spain', value: 47 },
+  { name: 'Saudi Arabia', value: 36 },
+  { name: 'South Korea', value: 51 },
 ];
 
-export const Choropleth: Story = {
+export const WorldChoropleth: Story = {
   args: {
     option: {
+      title: { text: 'World population', subtext: 'Millions of people, 2023', left: 'center' },
       tooltip: {
         trigger: 'item',
-        formatter: (p: { name: string; value: number }) =>
-          `${p.name}<br/>${(p.value || 0).toLocaleString()} people`,
+        formatter: (p: { name: string; value: number | undefined }) =>
+          p.value === undefined || Number.isNaN(p.value)
+            ? p.name
+            : `${p.name}<br/><b>${p.value.toLocaleString()}M</b>`,
       },
       visualMap: {
         min: 0,
-        max: 50_000_000,
+        max: 1500,
         left: 'left',
-        bottom: 12,
-        text: ['High', 'Low'],
+        bottom: 24,
+        text: ['1,500M', '0'],
         calculable: true,
-        inRange: { color: ['#e0f3f8', '#74add1', '#4575b4', '#313695'] },
+        inRange: { color: ['#e0f3f8', '#abd9e9', '#74add1', '#4575b4', '#313695'] },
       },
       series: [
         {
+          name: 'Population (M)',
           type: 'map',
-          map: 'demo-regions',
+          map: 'world',
           roam: true,
-          label: { show: true },
+          itemStyle: { areaColor: '#f4f4f4', borderColor: '#bbb' },
           emphasis: {
             label: { show: true, fontWeight: 'bold' },
             itemStyle: { areaColor: '#ffd180' },
           },
-          data: populations,
+          select: { itemStyle: { areaColor: '#ffab40' } },
+          data: populationMillions,
         },
       ],
     },
