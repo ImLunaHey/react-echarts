@@ -10,14 +10,13 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          'ECharts handles huge datasets via three knobs: `large: true` (skip per-item shape lookup), `progressive` (chunked rendering), and `sampling` (downsample line data). For very large data, ship it as a typed-array `dataset` so ECharts can zero-copy it.',
+          'ECharts handles huge datasets via three knobs: `large: true` (skip per-item shape lookup), `progressive` (chunked rendering), and `sampling` (downsample line data). For very large data, ship it as a typed-array `dataset` so ECharts can zero-copy it. Each story exposes a `count` slider in the Controls panel — drag it to scale the dataset up or down.',
       },
     },
   },
 };
 
 export default meta;
-type Story = StoryObj;
 
 // ---------- helpers ----------
 
@@ -32,14 +31,12 @@ const useTimedRender = (key: unknown) => {
   const startRef = useRef<number | null>(null);
   const settledRef = useRef(false);
 
-  // Reset start time when the dataset changes.
   useEffect(() => {
     settledRef.current = false;
     setMs(null);
     startRef.current = performance.now();
   }, [key]);
 
-  // Stable handler — bound once and never rebinds.
   const onEvents = useMemo(
     () => ({
       finished: () => {
@@ -61,47 +58,67 @@ const Stat = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-// ---------- 50k scatter ----------
+const fmt = (n: number) => n.toLocaleString();
 
-const Scatter50k = () => {
-  const data = useMemo(() => {
-    const N = 50_000;
-    const arr = new Float32Array(N * 2);
-    for (let i = 0; i < N; i++) {
-      arr[i * 2] = Math.random() * 100;
-      arr[i * 2 + 1] = Math.random() * 100;
-    }
-    return arr;
-  }, []);
+// Float32Array of [x, y, x, y, ...] randomly distributed in 0..100.
+const genScatter = (n: number) => {
+  const arr = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) {
+    arr[i * 2] = Math.random() * 100;
+    arr[i * 2 + 1] = Math.random() * 100;
+  }
+  return arr;
+};
 
+// Float32Array clustered around (30,30) and (70,70).
+const genClusters = (n: number) => {
+  const arr = new Float32Array(n * 2);
+  for (let i = 0; i < n; i++) {
+    const cx = Math.random() < 0.5 ? 30 : 70;
+    const cy = Math.random() < 0.5 ? 30 : 70;
+    arr[i * 2] = cx + (Math.random() - 0.5) * 30;
+    arr[i * 2 + 1] = cy + (Math.random() - 0.5) * 30;
+  }
+  return arr;
+};
+
+const genWalk = (n: number) => {
+  const arr: number[] = new Array(n);
+  let v = 50;
+  for (let i = 0; i < n; i++) {
+    v += (Math.random() - 0.5) * 1.5;
+    arr[i] = v;
+  }
+  return arr;
+};
+
+// ---------- Scatter (variable count) ----------
+
+const ScatterDemo = ({ count }: { count: number }) => {
+  const data = useMemo(() => genScatter(count), [count]);
   const t = useTimedRender(data);
 
-  // ECharts wants [[x,y], ...]; pass a typed-array dataset for cheap.
   const option = useMemo(
     () => ({
       animation: false,
       tooltip: { show: false },
       xAxis: { type: 'value' },
       yAxis: { type: 'value' },
-      dataset: {
-        source: data,
-        sourceHeader: false,
-        dimensions: ['x', 'y'],
-      },
+      dataset: { source: data, sourceHeader: false, dimensions: ['x', 'y'] },
       series: [
         {
           type: 'scatter',
           encode: { x: 0, y: 1 },
           large: true,
           largeThreshold: 2_000,
-          progressive: 5_000,
+          progressive: Math.max(5_000, Math.floor(count / 20)),
           progressiveThreshold: 10_000,
-          symbolSize: 2,
-          itemStyle: { color: '#5470c6', opacity: 0.5 },
+          symbolSize: count > 500_000 ? 1.5 : 2,
+          itemStyle: { color: '#5470c6', opacity: count > 200_000 ? 0.35 : 0.5 },
         },
       ],
     }),
-    [data],
+    [data, count],
   );
 
   return (
@@ -110,26 +127,26 @@ const Scatter50k = () => {
         <Chart option={option} onEvents={t.onEvents} />
       </SizedBox>
       <div style={{ display: 'flex', gap: 24, marginTop: 8 }}>
-        <Stat label="Points" value="50,000" />
+        <Stat label="Points" value={fmt(count)} />
+        <Stat label="Buffer" value={`Float32Array (${((count * 8) / 1024 / 1024).toFixed(1)} MB)`} />
         <Stat label="Render" value={t.ms === null ? '…' : `${t.ms.toFixed(0)} ms`} />
       </div>
     </div>
   );
 };
 
-// ---------- 100k line (sampled) ----------
+// ---------- Line (sampled, variable count) ----------
 
-const Line100k = () => {
+const LineDemo = ({ count }: { count: number }) => {
   const data = useMemo(() => {
-    const N = 100_000;
-    const arr: number[] = new Array(N);
+    const arr: number[] = new Array(count);
     let v = 0;
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < count; i++) {
       v += (Math.random() - 0.5) * 2;
       arr[i] = v;
     }
     return arr;
-  }, []);
+  }, [count]);
 
   const t = useTimedRender(data);
 
@@ -139,10 +156,7 @@ const Line100k = () => {
       tooltip: { trigger: 'axis' },
       xAxis: { type: 'category', show: false, data: data.map((_, i) => i) },
       yAxis: { type: 'value' },
-      dataZoom: [
-        { type: 'inside' },
-        { type: 'slider', height: 20, bottom: 8 },
-      ],
+      dataZoom: [{ type: 'inside' }, { type: 'slider', height: 20, bottom: 8 }],
       series: [
         {
           type: 'line',
@@ -150,13 +164,13 @@ const Line100k = () => {
           showSymbol: false,
           sampling: 'lttb',
           large: true,
-          progressive: 10_000,
+          progressive: Math.max(10_000, Math.floor(count / 10)),
           progressiveThreshold: 20_000,
           lineStyle: { width: 1 },
         },
       ],
     }),
-    [data],
+    [data, count],
   );
 
   return (
@@ -165,7 +179,7 @@ const Line100k = () => {
         <Chart option={option} onEvents={t.onEvents} />
       </SizedBox>
       <div style={{ display: 'flex', gap: 24, marginTop: 8 }}>
-        <Stat label="Points" value="100,000" />
+        <Stat label="Points" value={fmt(count)} />
         <Stat label="Sampling" value="LTTB" />
         <Stat label="Render" value={t.ms === null ? '…' : `${t.ms.toFixed(0)} ms`} />
       </div>
@@ -173,24 +187,16 @@ const Line100k = () => {
   );
 };
 
-// ---------- 1M scatter (typed array, large mode) ----------
+// ---------- 1M+ scatter (gated, variable count) ----------
 
-const Scatter1M = () => {
-  const [ready, setReady] = useState(false);
-  const data = useMemo(() => {
-    if (!ready) return null;
-    const N = 1_000_000;
-    const arr = new Float32Array(N * 2);
-    for (let i = 0; i < N; i++) {
-      // Two clusters for a recognizable shape
-      const cx = Math.random() < 0.5 ? 30 : 70;
-      const cy = Math.random() < 0.5 ? 30 : 70;
-      arr[i * 2] = cx + (Math.random() - 0.5) * 30;
-      arr[i * 2 + 1] = cy + (Math.random() - 0.5) * 30;
-    }
-    return arr;
-  }, [ready]);
+const ScatterOnDemand = ({ count }: { count: number }) => {
+  const [pending, setPending] = useState(count);
+  const [active, setActive] = useState<number | null>(null);
 
+  // Update the pending count when the slider changes; reset on regen.
+  useEffect(() => setPending(count), [count]);
+
+  const data = useMemo(() => (active === null ? null : genClusters(active)), [active]);
   const t = useTimedRender(data);
 
   const option = useMemo(() => {
@@ -200,11 +206,7 @@ const Scatter1M = () => {
       tooltip: { show: false },
       xAxis: { type: 'value', min: 0, max: 100 },
       yAxis: { type: 'value', min: 0, max: 100 },
-      dataset: {
-        source: data,
-        sourceHeader: false,
-        dimensions: ['x', 'y'],
-      },
+      dataset: { source: data, sourceHeader: false, dimensions: ['x', 'y'] },
       series: [
         {
           type: 'scatter',
@@ -223,46 +225,69 @@ const Scatter1M = () => {
   return (
     <div>
       <SizedBox width={720} height={400}>
-        {!ready ? (
+        {active === null ? (
           <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
-            <button onClick={() => setReady(true)} style={{ padding: '8px 16px' }}>
-              Render 1,000,000 points
+            <button onClick={() => setActive(pending)} style={{ padding: '8px 16px' }}>
+              Render {fmt(pending)} points
             </button>
           </div>
         ) : (
           <Chart option={option} onEvents={t.onEvents} />
         )}
       </SizedBox>
-      <div style={{ display: 'flex', gap: 24, marginTop: 8 }}>
-        <Stat label="Points" value="1,000,000" />
-        <Stat label="Buffer" value="Float32Array (8 MB)" />
-        <Stat label="Render" value={t.ms === null ? (ready ? '…' : '—') : `${t.ms.toFixed(0)} ms`} />
+      <div style={{ display: 'flex', gap: 24, marginTop: 8, flexWrap: 'wrap' }}>
+        <Stat label="Points" value={active === null ? `${fmt(pending)} (pending)` : fmt(active)} />
+        <Stat
+          label="Buffer"
+          value={`Float32Array (${(((active ?? pending) * 8) / 1024 / 1024).toFixed(1)} MB)`}
+        />
+        <Stat label="Render" value={t.ms === null ? (active !== null ? '…' : '—') : `${t.ms.toFixed(0)} ms`} />
+        {active !== null && (
+          <button
+            onClick={() => {
+              setActive(null);
+              setTimeout(() => setActive(pending), 0);
+            }}
+            style={{ padding: '4px 10px' }}
+          >
+            Re-render @ {fmt(pending)}
+          </button>
+        )}
       </div>
     </div>
   );
 };
 
-// ---------- Streaming append ----------
+// ---------- Streaming append (variable window) ----------
 
-const StreamingAppend = () => {
+const StreamingAppend = ({ window: windowSize }: { window: number }) => {
   const ref = useRef<ChartHandle>(null);
   const bufRef = useRef<{ x: number[]; y: number[] }>({ x: [], y: [] });
   const [tick, setTick] = useState(0);
 
+  // Truncate the buffer when the window shrinks.
+  useEffect(() => {
+    const buf = bufRef.current;
+    while (buf.x.length > windowSize) {
+      buf.x.shift();
+      buf.y.shift();
+    }
+  }, [windowSize]);
+
   useEffect(() => {
     const id = setInterval(() => {
       const buf = bufRef.current;
-      const next = buf.x.length;
+      const next = buf.x.length === 0 ? 0 : buf.x[buf.x.length - 1]! + 1;
       buf.x.push(next);
       buf.y.push(Math.sin(next / 8) * 30 + (Math.random() - 0.5) * 6);
-      if (buf.x.length > 5_000) {
+      while (buf.x.length > windowSize) {
         buf.x.shift();
         buf.y.shift();
       }
       setTick((n) => n + 1);
     }, 16);
     return () => clearInterval(id);
-  }, []);
+  }, [windowSize]);
 
   const option = useMemo(() => {
     const { x, y } = bufRef.current;
@@ -290,28 +315,19 @@ const StreamingAppend = () => {
         <Chart ref={ref} option={option} />
       </SizedBox>
       <div style={{ display: 'flex', gap: 24, marginTop: 8 }}>
-        <Stat label="Window" value="5,000 points" />
+        <Stat label="Window" value={`${fmt(windowSize)} points`} />
         <Stat label="Frame rate" value="~60 fps (16 ms)" />
-        <Stat label="Tick" value={String(tick)} />
+        <Stat label="Tick" value={fmt(tick)} />
+        <Stat label="Buffered" value={fmt(bufRef.current.x.length)} />
       </div>
     </div>
   );
 };
 
-// ---------- Hover at 100k (axisPointer) ----------
+// ---------- Hover (variable count) ----------
 
-const HoverAt100k = () => {
-  const data = useMemo(() => {
-    const N = 100_000;
-    const arr: number[] = new Array(N);
-    let v = 50;
-    for (let i = 0; i < N; i++) {
-      v += (Math.random() - 0.5) * 1.5;
-      arr[i] = v;
-    }
-    return arr;
-  }, []);
-
+const HoverDemo = ({ count }: { count: number }) => {
+  const data = useMemo(() => genWalk(count), [count]);
   const [hover, setHover] = useState<{ index: number; value: number } | null>(null);
 
   const hoverEvents = useMemo(
@@ -330,15 +346,8 @@ const HoverAt100k = () => {
   const option = useMemo(
     () => ({
       animation: false,
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross', snap: true },
-      },
-      xAxis: {
-        type: 'category',
-        data: data.map((_, i) => i),
-        axisLabel: { showMaxLabel: true },
-      },
+      tooltip: { trigger: 'axis', axisPointer: { type: 'cross', snap: true } },
+      xAxis: { type: 'category', data: data.map((_, i) => i), axisLabel: { showMaxLabel: true } },
       yAxis: { type: 'value' },
       dataZoom: [{ type: 'inside' }, { type: 'slider', height: 18, bottom: 6 }],
       series: [
@@ -361,8 +370,8 @@ const HoverAt100k = () => {
         <Chart option={option} onEvents={hoverEvents} />
       </SizedBox>
       <div style={{ display: 'flex', gap: 24, marginTop: 8 }}>
-        <Stat label="Points" value="100,000" />
-        <Stat label="Hover index" value={hover ? String(hover.index) : '—'} />
+        <Stat label="Points" value={fmt(count)} />
+        <Stat label="Hover index" value={hover ? fmt(hover.index) : '—'} />
         <Stat label="Hover value" value={hover ? hover.value.toFixed(3) : '—'} />
       </div>
       <p style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>
@@ -372,22 +381,14 @@ const HoverAt100k = () => {
   );
 };
 
-// ---------- Click at 1M (convertFromPixel) ----------
+// ---------- Click + nearest (gated, variable count) ----------
 
-const ClickAt1M = () => {
-  const [ready, setReady] = useState(false);
-  const data = useMemo(() => {
-    if (!ready) return null;
-    const N = 1_000_000;
-    const arr = new Float32Array(N * 2);
-    for (let i = 0; i < N; i++) {
-      const cx = Math.random() < 0.5 ? 30 : 70;
-      const cy = Math.random() < 0.5 ? 30 : 70;
-      arr[i * 2] = cx + (Math.random() - 0.5) * 30;
-      arr[i * 2 + 1] = cy + (Math.random() - 0.5) * 30;
-    }
-    return arr;
-  }, [ready]);
+const ClickDemo = ({ count }: { count: number }) => {
+  const [pending, setPending] = useState(count);
+  const [active, setActive] = useState<number | null>(null);
+  useEffect(() => setPending(count), [count]);
+
+  const data = useMemo(() => (active === null ? null : genClusters(active)), [active]);
 
   const ref = useRef<ChartHandle>(null);
   const [click, setClick] = useState<{
@@ -419,24 +420,8 @@ const ClickAt1M = () => {
     };
   }, [data]);
 
-  const findNearest = (x: number, y: number) => {
-    if (!data) return null;
-    let bestI = 0;
-    let bestD = Infinity;
-    for (let i = 0; i < data.length; i += 2) {
-      const dx = data[i]! - x;
-      const dy = data[i + 1]! - y;
-      const d = dx * dx + dy * dy;
-      if (d < bestD) {
-        bestD = d;
-        bestI = i;
-      }
-    }
-    return { x: data[bestI]!, y: data[bestI + 1]!, i: bestI / 2 };
-  };
-
   useEffect(() => {
-    if (!ready || !data) return;
+    if (active === null || !data) return;
     const instance = ref.current?.getInstance();
     if (!instance) return;
     type ZrHandler = (p: { offsetX: number; offsetY: number }) => void;
@@ -445,24 +430,38 @@ const ClickAt1M = () => {
       convertFromPixel: (finder: { gridIndex?: number }, p: [number, number]) => [number, number];
     };
     const zr = ec.getZr();
+    const findNearest = (x: number, y: number) => {
+      let bestI = 0;
+      let bestD = Infinity;
+      for (let i = 0; i < data.length; i += 2) {
+        const dx = data[i]! - x;
+        const dy = data[i + 1]! - y;
+        const d = dx * dx + dy * dy;
+        if (d < bestD) {
+          bestD = d;
+          bestI = i;
+        }
+      }
+      return { x: data[bestI]!, y: data[bestI + 1]!, i: bestI / 2 };
+    };
     const handler: ZrHandler = (params) => {
       const point = ec.convertFromPixel({ gridIndex: 0 }, [params.offsetX, params.offsetY]);
       const t0 = performance.now();
       const nearest = findNearest(point[0], point[1]);
       const searchMs = performance.now() - t0;
-      if (nearest) setClick({ x: point[0], y: point[1], nearest, searchMs });
+      setClick({ x: point[0], y: point[1], nearest, searchMs });
     };
     zr.on('click', handler);
     return () => zr.off('click', handler);
-  }, [ready, data]);
+  }, [active, data]);
 
   return (
     <div>
       <SizedBox width={720} height={400}>
-        {!ready ? (
+        {active === null ? (
           <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
-            <button onClick={() => setReady(true)} style={{ padding: '8px 16px' }}>
-              Render 1,000,000 points (then click anywhere)
+            <button onClick={() => setActive(pending)} style={{ padding: '8px 16px' }}>
+              Render {fmt(pending)} points (then click anywhere)
             </button>
           </div>
         ) : (
@@ -470,17 +469,14 @@ const ClickAt1M = () => {
         )}
       </SizedBox>
       <div style={{ display: 'flex', gap: 24, marginTop: 8, flexWrap: 'wrap' }}>
-        <Stat label="Points" value="1,000,000" />
-        <Stat label="Render" value={t.ms === null ? (ready ? '…' : '—') : `${t.ms.toFixed(0)} ms`} />
+        <Stat label="Points" value={active === null ? `${fmt(pending)} (pending)` : fmt(active)} />
+        <Stat label="Render" value={t.ms === null ? (active !== null ? '…' : '—') : `${t.ms.toFixed(0)} ms`} />
         <Stat label="Clicked at" value={click ? `${click.x.toFixed(2)}, ${click.y.toFixed(2)}` : '—'} />
         <Stat
           label="Nearest point"
-          value={click ? `[${click.nearest.i}] ${click.nearest.x.toFixed(2)}, ${click.nearest.y.toFixed(2)}` : '—'}
+          value={click ? `[${fmt(click.nearest.i)}] ${click.nearest.x.toFixed(2)}, ${click.nearest.y.toFixed(2)}` : '—'}
         />
-        <Stat
-          label="Nearest search"
-          value={click ? `${click.searchMs.toFixed(2)} ms` : '—'}
-        />
+        <Stat label="Nearest search" value={click ? `${click.searchMs.toFixed(2)} ms` : '—'} />
       </div>
       <p style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>
         `convertFromPixel` turns the click into chart coordinates; the nearest point is found in one pass over the buffer.
@@ -489,19 +485,10 @@ const ClickAt1M = () => {
   );
 };
 
-// ---------- Brush select at 50k ----------
+// ---------- Brush select (variable count) ----------
 
-const BrushAt50k = () => {
-  const data = useMemo(() => {
-    const N = 50_000;
-    const arr = new Float32Array(N * 2);
-    for (let i = 0; i < N; i++) {
-      arr[i * 2] = Math.random() * 100;
-      arr[i * 2 + 1] = Math.random() * 100;
-    }
-    return arr;
-  }, []);
-
+const BrushDemo = ({ count }: { count: number }) => {
+  const data = useMemo(() => genScatter(count), [count]);
   const [selection, setSelection] = useState<{ count: number; bounds?: [number, number, number, number] }>({ count: 0 });
 
   const brushEvents = useMemo(
@@ -536,9 +523,7 @@ const BrushAt50k = () => {
       animation: false,
       tooltip: { show: false },
       toolbox: {
-        feature: {
-          brush: { type: ['rect', 'polygon', 'clear'] },
-        },
+        feature: { brush: { type: ['rect', 'polygon', 'clear'] } },
         right: 12,
       },
       brush: { toolbox: ['rect', 'polygon', 'clear'], xAxisIndex: 0 },
@@ -565,8 +550,8 @@ const BrushAt50k = () => {
         <Chart option={option} onEvents={brushEvents} />
       </SizedBox>
       <div style={{ display: 'flex', gap: 24, marginTop: 8, flexWrap: 'wrap' }}>
-        <Stat label="Points" value="50,000" />
-        <Stat label="Selected" value={selection.count.toLocaleString()} />
+        <Stat label="Points" value={fmt(count)} />
+        <Stat label="Selected" value={fmt(selection.count)} />
         <Stat
           label="Bounds"
           value={
@@ -583,10 +568,62 @@ const BrushAt50k = () => {
   );
 };
 
-export const Scatter50K: Story = { name: '50k scatter', render: () => <Scatter50k /> };
-export const Line100K: Story = { name: '100k line (sampled)', render: () => <Line100k /> };
-export const Scatter1MOnDemand: Story = { name: '1M scatter (on demand)', render: () => <Scatter1M /> };
-export const Streaming: Story = { name: 'Streaming append (60 fps)', render: () => <StreamingAppend /> };
-export const HoverAt100K: Story = { name: 'Hover at 100k (axisPointer)', render: () => <HoverAt100k /> };
-export const ClickAt1MStory: Story = { name: 'Click at 1M (convertFromPixel)', render: () => <ClickAt1M /> };
-export const BrushSelect50K: Story = { name: 'Brush select at 50k', render: () => <BrushAt50k /> };
+// ---------- argTypes ----------
+
+const countSlider = (min: number, max: number, step: number) => ({
+  count: { control: { type: 'range' as const, min, max, step } },
+});
+
+// ---------- stories ----------
+
+type CountStory = StoryObj<{ count: number }>;
+type WindowStory = StoryObj<{ window: number }>;
+
+export const ScatterAtScale: CountStory = {
+  name: 'Scatter (variable count)',
+  argTypes: countSlider(1_000, 500_000, 1_000),
+  args: { count: 50_000 },
+  render: ({ count }) => <ScatterDemo count={count} />,
+};
+
+export const LineAtScale: CountStory = {
+  name: 'Line, sampled (variable count)',
+  argTypes: countSlider(1_000, 500_000, 1_000),
+  args: { count: 100_000 },
+  render: ({ count }) => <LineDemo count={count} />,
+};
+
+export const ScatterOnDemandStory: CountStory = {
+  name: 'Scatter on demand (1M default, up to 5M)',
+  argTypes: countSlider(100_000, 5_000_000, 100_000),
+  args: { count: 1_000_000 },
+  render: ({ count }) => <ScatterOnDemand count={count} />,
+};
+
+export const StreamingStory: WindowStory = {
+  name: 'Streaming append (variable window)',
+  argTypes: { window: { control: { type: 'range', min: 100, max: 20_000, step: 100 } } },
+  args: { window: 5_000 },
+  render: ({ window }) => <StreamingAppend window={window} />,
+};
+
+export const HoverAtScale: CountStory = {
+  name: 'Hover, axisPointer (variable count)',
+  argTypes: countSlider(1_000, 500_000, 1_000),
+  args: { count: 100_000 },
+  render: ({ count }) => <HoverDemo count={count} />,
+};
+
+export const ClickAtScale: CountStory = {
+  name: 'Click + nearest (1M default, up to 5M)',
+  argTypes: countSlider(100_000, 5_000_000, 100_000),
+  args: { count: 1_000_000 },
+  render: ({ count }) => <ClickDemo count={count} />,
+};
+
+export const BrushAtScale: CountStory = {
+  name: 'Brush select (variable count)',
+  argTypes: countSlider(1_000, 500_000, 1_000),
+  args: { count: 50_000 },
+  render: ({ count }) => <BrushDemo count={count} />,
+};
