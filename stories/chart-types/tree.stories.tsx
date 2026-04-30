@@ -1,15 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Chart } from '../../src';
-import { SizedBox } from '../decorators';
+import {
+  ControlledChart,
+  controlledChartArgTypes,
+  controlledChartDefaults,
+} from '../controlled-chart';
 
-const meta: Meta<typeof Chart> = {
+const meta: Meta<typeof ControlledChart> = {
   title: 'Chart types/Tree',
-  component: Chart,
+  component: ControlledChart,
+  argTypes: controlledChartArgTypes,
+  args: { ...controlledChartDefaults, width: 720, height: 420 },
 };
 
 export default meta;
-type Story = StoryObj<typeof Chart>;
+type Story = StoryObj<typeof ControlledChart>;
 
 const data = {
   name: 'root',
@@ -38,52 +43,46 @@ const data = {
 };
 
 export const Horizontal: Story = {
-  render: () => (
-    <SizedBox width={720} height={420}>
-      <Chart
-        option={{
-          tooltip: { trigger: 'item' },
-          series: [
-            {
-              type: 'tree',
-              data: [data],
-              top: '5%',
-              bottom: '5%',
-              left: '12%',
-              right: '12%',
-              symbol: 'emptyCircle',
-              symbolSize: 8,
-              label: { position: 'left', verticalAlign: 'middle', align: 'right' },
-              leaves: { label: { position: 'right', verticalAlign: 'middle', align: 'left' } },
-              emphasis: { focus: 'descendant' },
-              expandAndCollapse: true,
-            },
-          ],
-        }}
-      />
-    </SizedBox>
-  ),
+  args: {
+    option: {
+      tooltip: { trigger: 'item' },
+      series: [
+        {
+          type: 'tree',
+          data: [data],
+          top: '5%',
+          bottom: '5%',
+          left: '12%',
+          right: '12%',
+          symbol: 'emptyCircle',
+          symbolSize: 8,
+          label: { position: 'left', verticalAlign: 'middle', align: 'right' },
+          leaves: { label: { position: 'right', verticalAlign: 'middle', align: 'left' } },
+          emphasis: { focus: 'descendant' },
+          expandAndCollapse: true,
+        },
+      ],
+    },
+  },
 };
 
 export const Radial: Story = {
-  render: () => (
-    <SizedBox width={520} height={520}>
-      <Chart
-        option={{
-          tooltip: { trigger: 'item' },
-          series: [
-            {
-              type: 'tree',
-              data: [data],
-              layout: 'radial',
-              symbol: 'emptyCircle',
-              symbolSize: 7,
-              initialTreeDepth: 3,
-              animationDurationUpdate: 750,
-            },
-          ],
-        }}
-      />
-    </SizedBox>
-  ),
+  args: {
+    width: 520,
+    height: 520,
+    option: {
+      tooltip: { trigger: 'item' },
+      series: [
+        {
+          type: 'tree',
+          data: [data],
+          layout: 'radial',
+          symbol: 'emptyCircle',
+          symbolSize: 7,
+          initialTreeDepth: 3,
+          animationDurationUpdate: 750,
+        },
+      ],
+    },
+  },
 };

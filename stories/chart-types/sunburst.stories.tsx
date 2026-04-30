@@ -1,49 +1,50 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Chart } from '../../src';
-import { SizedBox } from '../decorators';
+import {
+  ControlledChart,
+  controlledChartArgTypes,
+  controlledChartDefaults,
+} from '../controlled-chart';
 
-const meta: Meta<typeof Chart> = {
+const meta: Meta<typeof ControlledChart> = {
   title: 'Chart types/Sunburst',
-  component: Chart,
+  component: ControlledChart,
+  argTypes: controlledChartArgTypes,
+  args: controlledChartDefaults,
 };
 
 export default meta;
-type Story = StoryObj<typeof Chart>;
+type Story = StoryObj<typeof ControlledChart>;
 
 export const Basic: Story = {
-  render: () => (
-    <SizedBox>
-      <Chart
-        option={{
-          series: [
+  args: {
+    option: {
+      series: [
+        {
+          type: 'sunburst',
+          radius: [0, '90%'],
+          data: [
             {
-              type: 'sunburst',
-              radius: [0, '90%'],
-              data: [
-                {
-                  name: 'Sales',
-                  children: [
-                    { name: 'Q1', value: 6 },
-                    { name: 'Q2', value: 8 },
-                    { name: 'Q3', value: 12, children: [{ name: 'Promo', value: 5 }] },
-                    { name: 'Q4', value: 10 },
-                  ],
-                },
-                {
-                  name: 'Marketing',
-                  children: [
-                    { name: 'Email', value: 4 },
-                    { name: 'Paid', value: 9 },
-                    { name: 'Social', value: 7 },
-                  ],
-                },
+              name: 'Sales',
+              children: [
+                { name: 'Q1', value: 6 },
+                { name: 'Q2', value: 8 },
+                { name: 'Q3', value: 12, children: [{ name: 'Promo', value: 5 }] },
+                { name: 'Q4', value: 10 },
               ],
-              label: { rotate: 'radial' },
+            },
+            {
+              name: 'Marketing',
+              children: [
+                { name: 'Email', value: 4 },
+                { name: 'Paid', value: 9 },
+                { name: 'Social', value: 7 },
+              ],
             },
           ],
-        }}
-      />
-    </SizedBox>
-  ),
+          label: { rotate: 'radial' },
+        },
+      ],
+    },
+  },
 };

@@ -1,64 +1,61 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Chart } from '../../src';
-import { SizedBox } from '../decorators';
+import {
+  ControlledChart,
+  controlledChartArgTypes,
+  controlledChartDefaults,
+} from '../controlled-chart';
 
-const meta: Meta<typeof Chart> = {
+const meta: Meta<typeof ControlledChart> = {
   title: 'Chart types/Gauge',
-  component: Chart,
+  component: ControlledChart,
+  argTypes: controlledChartArgTypes,
+  args: controlledChartDefaults,
 };
 
 export default meta;
-type Story = StoryObj<typeof Chart>;
+type Story = StoryObj<typeof ControlledChart>;
 
 export const Basic: Story = {
-  render: () => (
-    <SizedBox>
-      <Chart
-        option={{
-          series: [
-            {
-              type: 'gauge',
-              progress: { show: true },
-              detail: { valueAnimation: true, formatter: '{value}' },
-              data: [{ value: 72, name: 'Score' }],
-            },
-          ],
-        }}
-      />
-    </SizedBox>
-  ),
+  args: {
+    option: {
+      series: [
+        {
+          type: 'gauge',
+          progress: { show: true },
+          detail: { valueAnimation: true, formatter: '{value}' },
+          data: [{ value: 72, name: 'Score' }],
+        },
+      ],
+    },
+  },
 };
 
 export const Speedometer: Story = {
-  render: () => (
-    <SizedBox>
-      <Chart
-        option={{
-          series: [
-            {
-              type: 'gauge',
-              startAngle: 180,
-              endAngle: 0,
-              min: 0,
-              max: 220,
-              splitNumber: 11,
-              axisLine: {
-                lineStyle: {
-                  width: 18,
-                  color: [
-                    [0.3, '#67e0e3'],
-                    [0.7, '#37a2da'],
-                    [1, '#fd666d'],
-                  ],
-                },
-              },
-              detail: { formatter: '{value} km/h' },
-              data: [{ value: 145 }],
+  args: {
+    option: {
+      series: [
+        {
+          type: 'gauge',
+          startAngle: 180,
+          endAngle: 0,
+          min: 0,
+          max: 220,
+          splitNumber: 11,
+          axisLine: {
+            lineStyle: {
+              width: 18,
+              color: [
+                [0.3, '#67e0e3'],
+                [0.7, '#37a2da'],
+                [1, '#fd666d'],
+              ],
             },
-          ],
-        }}
-      />
-    </SizedBox>
-  ),
+          },
+          detail: { formatter: '{value} km/h' },
+          data: [{ value: 145 }],
+        },
+      ],
+    },
+  },
 };

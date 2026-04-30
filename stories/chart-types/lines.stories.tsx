@@ -1,15 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Chart } from '../../src';
-import { SizedBox } from '../decorators';
+import {
+  ControlledChart,
+  controlledChartArgTypes,
+  controlledChartDefaults,
+} from '../controlled-chart';
 
-const meta: Meta<typeof Chart> = {
+const meta: Meta<typeof ControlledChart> = {
   title: 'Chart types/Lines',
-  component: Chart,
+  component: ControlledChart,
+  argTypes: controlledChartArgTypes,
+  args: controlledChartDefaults,
 };
 
 export default meta;
-type Story = StoryObj<typeof Chart>;
+type Story = StoryObj<typeof ControlledChart>;
 
 const flights = [
   { coords: [[10, 12], [80, 88]] },
@@ -20,25 +25,21 @@ const flights = [
 ];
 
 export const Trails: Story = {
-  render: () => (
-    <SizedBox>
-      <Chart
-        option={{
-          xAxis: { type: 'value', min: 0, max: 100 },
-          yAxis: { type: 'value', min: 0, max: 100 },
-          tooltip: { trigger: 'item' },
-          series: [
-            {
-              type: 'lines',
-              coordinateSystem: 'cartesian2d',
-              polyline: true,
-              effect: { show: true, period: 4, trailLength: 0.3, symbolSize: 6 },
-              lineStyle: { width: 1.5, opacity: 0.7, curveness: 0.2 },
-              data: flights,
-            },
-          ],
-        }}
-      />
-    </SizedBox>
-  ),
+  args: {
+    option: {
+      xAxis: { type: 'value', min: 0, max: 100 },
+      yAxis: { type: 'value', min: 0, max: 100 },
+      tooltip: { trigger: 'item' },
+      series: [
+        {
+          type: 'lines',
+          coordinateSystem: 'cartesian2d',
+          polyline: true,
+          effect: { show: true, period: 4, trailLength: 0.3, symbolSize: 6 },
+          lineStyle: { width: 1.5, opacity: 0.7, curveness: 0.2 },
+          data: flights,
+        },
+      ],
+    },
+  },
 };

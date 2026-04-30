@@ -1,15 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Chart } from '../../src';
-import { SizedBox } from '../decorators';
+import {
+  ControlledChart,
+  controlledChartArgTypes,
+  controlledChartDefaults,
+} from '../controlled-chart';
 
-const meta: Meta<typeof Chart> = {
+const meta: Meta<typeof ControlledChart> = {
   title: 'Chart types/Theme river',
-  component: Chart,
+  component: ControlledChart,
+  argTypes: controlledChartArgTypes,
+  args: { ...controlledChartDefaults, width: 720, height: 400 },
 };
 
 export default meta;
-type Story = StoryObj<typeof Chart>;
+type Story = StoryObj<typeof ControlledChart>;
 
 const days = Array.from({ length: 14 }, (_, i) => `2026-04-${String(i + 1).padStart(2, '0')}`);
 const topics = ['React', 'Vue', 'Svelte', 'Solid', 'Astro'];
@@ -21,22 +26,24 @@ for (const day of days) {
 }
 
 export const Mentions: Story = {
-  render: () => (
-    <SizedBox width={720} height={400}>
-      <Chart
-        option={{
-          tooltip: { trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: 'rgba(0,0,0,0.2)', width: 1, type: 'solid' } } },
-          legend: { bottom: 0, data: topics },
-          singleAxis: { top: 30, bottom: 50, axisTick: {}, axisLabel: {}, type: 'time' },
-          series: [
-            {
-              type: 'themeRiver',
-              emphasis: { itemStyle: { shadowBlur: 16, shadowColor: 'rgba(0,0,0,0.4)' } },
-              data,
-            },
-          ],
-        }}
-      />
-    </SizedBox>
-  ),
+  args: {
+    option: {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'line',
+          lineStyle: { color: 'rgba(0,0,0,0.2)', width: 1, type: 'solid' },
+        },
+      },
+      legend: { bottom: 0, data: topics },
+      singleAxis: { top: 30, bottom: 50, axisTick: {}, axisLabel: {}, type: 'time' },
+      series: [
+        {
+          type: 'themeRiver',
+          emphasis: { itemStyle: { shadowBlur: 16, shadowColor: 'rgba(0,0,0,0.4)' } },
+          data,
+        },
+      ],
+    },
+  },
 };

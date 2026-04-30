@@ -1,15 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Chart } from '../../src';
-import { SizedBox } from '../decorators';
+import {
+  ControlledChart,
+  controlledChartArgTypes,
+  controlledChartDefaults,
+} from '../controlled-chart';
 
-const meta: Meta<typeof Chart> = {
+const meta: Meta<typeof ControlledChart> = {
   title: 'Chart types/Candlestick',
-  component: Chart,
+  component: ControlledChart,
+  argTypes: controlledChartArgTypes,
+  args: controlledChartDefaults,
 };
 
 export default meta;
-type Story = StoryObj<typeof Chart>;
+type Story = StoryObj<typeof ControlledChart>;
 
 // Each row: [open, close, lowest, highest]
 const data = [
@@ -23,19 +28,23 @@ const data = [
 ];
 
 export const Basic: Story = {
-  render: () => (
-    <SizedBox>
-      <Chart
-        option={{
-          tooltip: { trigger: 'axis' },
-          xAxis: {
-            type: 'category',
-            data: ['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05', '2024-01-06', '2024-01-07'],
-          },
-          yAxis: { type: 'value' },
-          series: [{ type: 'candlestick', data }],
-        }}
-      />
-    </SizedBox>
-  ),
+  args: {
+    option: {
+      tooltip: { trigger: 'axis' },
+      xAxis: {
+        type: 'category',
+        data: [
+          '2024-01-01',
+          '2024-01-02',
+          '2024-01-03',
+          '2024-01-04',
+          '2024-01-05',
+          '2024-01-06',
+          '2024-01-07',
+        ],
+      },
+      yAxis: { type: 'value' },
+      series: [{ type: 'candlestick', data }],
+    },
+  },
 };

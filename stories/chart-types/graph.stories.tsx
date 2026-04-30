@@ -1,15 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { Chart } from '../../src';
-import { SizedBox } from '../decorators';
+import {
+  ControlledChart,
+  controlledChartArgTypes,
+  controlledChartDefaults,
+} from '../controlled-chart';
 
-const meta: Meta<typeof Chart> = {
+const meta: Meta<typeof ControlledChart> = {
   title: 'Chart types/Graph',
-  component: Chart,
+  component: ControlledChart,
+  argTypes: controlledChartArgTypes,
+  args: { ...controlledChartDefaults, width: 640, height: 420 },
 };
 
 export default meta;
-type Story = StoryObj<typeof Chart>;
+type Story = StoryObj<typeof ControlledChart>;
 
 const nodes = [
   { id: '0', name: 'A', symbolSize: 40, category: 0 },
@@ -33,29 +38,25 @@ const links = [
 ];
 
 export const ForceDirected: Story = {
-  render: () => (
-    <SizedBox width={640} height={420}>
-      <Chart
-        option={{
-          tooltip: { trigger: 'item' },
-          legend: [{ data: ['Group 1', 'Group 2', 'Group 3'] }],
-          series: [
-            {
-              type: 'graph',
-              layout: 'force',
-              roam: true,
-              draggable: true,
-              categories: [{ name: 'Group 1' }, { name: 'Group 2' }, { name: 'Group 3' }],
-              data: nodes,
-              links,
-              label: { show: true, position: 'right' },
-              force: { repulsion: 220, edgeLength: 80 },
-              lineStyle: { color: 'source', curveness: 0.2 },
-              emphasis: { focus: 'adjacency' },
-            },
-          ],
-        }}
-      />
-    </SizedBox>
-  ),
+  args: {
+    option: {
+      tooltip: { trigger: 'item' },
+      legend: [{ data: ['Group 1', 'Group 2', 'Group 3'] }],
+      series: [
+        {
+          type: 'graph',
+          layout: 'force',
+          roam: true,
+          draggable: true,
+          categories: [{ name: 'Group 1' }, { name: 'Group 2' }, { name: 'Group 3' }],
+          data: nodes,
+          links,
+          label: { show: true, position: 'right' },
+          force: { repulsion: 220, edgeLength: 80 },
+          lineStyle: { color: 'source', curveness: 0.2 },
+          emphasis: { focus: 'adjacency' },
+        },
+      ],
+    },
+  },
 };
