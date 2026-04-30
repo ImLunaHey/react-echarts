@@ -69,10 +69,11 @@ The container defaults to `width: 100%; height: 100%` — give it a parent with 
 <Chart option={{ ..., series: [{ type: 'lines',         data }] }} />
 <Chart option={{ ..., series: [{ type: 'themeRiver',    data }] }} />
 <Chart option={{ ..., series: [{ type: 'pictorialBar',  data }] }} />
+<Chart option={{ ..., series: [{ type: 'map',           data, map: 'name' }] }} />
 <Chart option={{ ..., series: [{ type: 'custom',        renderItem }] }} />
 ```
 
-`map` works too — register a geoJSON via `echarts.registerMap` first. The Storybook ships a story per type; see the **Chart types** sidebar.
+For `map`, register a geoJSON once via `echarts.registerMap('name', geoJson)` before referencing it in `series[].map`. Every type above has a dedicated story — see the **Chart types** sidebar.
 
 ## Props
 

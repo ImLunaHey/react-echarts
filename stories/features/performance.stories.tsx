@@ -522,13 +522,41 @@ const BrushDemo = ({ count }: { count: number }) => {
     () => ({
       animation: false,
       tooltip: { show: false },
-      toolbox: {
-        feature: { brush: { type: ['rect', 'polygon', 'clear'] } },
-        right: 12,
+      title: {
+        text: 'Drag to select points',
+        subtext: 'Click and drag anywhere on the chart',
+        left: 'center',
+        top: 0,
+        textStyle: { fontSize: 13, fontWeight: 'normal' },
+        subtextStyle: { fontSize: 11, color: '#888' },
       },
-      brush: { toolbox: ['rect', 'polygon', 'clear'], xAxisIndex: 0 },
+      toolbox: {
+        feature: {
+          brush: {
+            type: ['rect', 'polygon', 'lineX', 'lineY', 'keep', 'clear'],
+            title: {
+              rect: 'Box select',
+              polygon: 'Lasso',
+              lineX: 'Vertical band',
+              lineY: 'Horizontal band',
+              keep: 'Keep selection',
+              clear: 'Clear',
+            },
+          },
+        },
+        right: 12,
+        top: 0,
+      },
+      brush: {
+        toolbox: ['rect', 'polygon', 'lineX', 'lineY', 'keep', 'clear'],
+        xAxisIndex: 0,
+        // Default tool — the rect brush is active immediately, no toolbox click needed.
+        brushType: 'rect',
+        outOfBrush: { colorAlpha: 0.06 },
+      },
       xAxis: { type: 'value', min: 0, max: 100 },
       yAxis: { type: 'value', min: 0, max: 100 },
+      grid: { top: 56 },
       dataset: { source: data, sourceHeader: false, dimensions: ['x', 'y'] },
       series: [
         {
@@ -536,33 +564,53 @@ const BrushDemo = ({ count }: { count: number }) => {
           encode: { x: 0, y: 1 },
           large: true,
           progressive: 5_000,
-          symbolSize: 2,
-          itemStyle: { color: '#5470c6', opacity: 0.5 },
+          symbolSize: 3,
+          itemStyle: { color: '#5470c6', opacity: 0.6 },
+          // Highlight points inside the brush, fade everything else.
+          emphasis: { itemStyle: { color: '#ff5c5c' } },
         },
       ],
     }),
     [data],
   );
 
+  const totalArea = 100 * 100;
+  const selectedArea = selection.bounds
+    ? (selection.bounds[2] - selection.bounds[0]) * (selection.bounds[3] - selection.bounds[1])
+    : 0;
+  const expectedDensity = selection.bounds
+    ? Math.round((count * selectedArea) / totalArea)
+    : null;
+
   return (
     <div>
-      <SizedBox width={720} height={400}>
+      <SizedBox width={720} height={420}>
         <Chart option={option} onEvents={brushEvents} />
       </SizedBox>
       <div style={{ display: 'flex', gap: 24, marginTop: 8, flexWrap: 'wrap' }}>
-        <Stat label="Points" value={fmt(count)} />
-        <Stat label="Selected" value={fmt(selection.count)} />
+        <Stat label="Total points" value={fmt(count)} />
         <Stat
-          label="Bounds"
+          label="Selected"
+          value={
+            selection.count === 0
+              ? '0'
+              : `${fmt(selection.count)}  (${((selection.count / count) * 100).toFixed(1)}%)`
+          }
+        />
+        <Stat
+          label="Selection bounds"
           value={
             selection.bounds
               ? `x: ${selection.bounds[0].toFixed(1)}–${selection.bounds[2].toFixed(1)}, y: ${selection.bounds[1].toFixed(1)}–${selection.bounds[3].toFixed(1)}`
               : '—'
           }
         />
+        {expectedDensity !== null && (
+          <Stat label="Expected (uniform)" value={fmt(expectedDensity)} />
+        )}
       </div>
       <p style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>
-        Use the toolbox at the top-right to draw a rectangle or polygon. `brushSelected` returns every point's data index in one event.
+        Drag a rectangle on the chart to select points. The toolbox at the top-right offers polygon, line, and keep-multiple modes. `brushSelected` returns every point's index in a single event — for {fmt(count)} points the entire selection list arrives in &lt;1 ms.
       </p>
     </div>
   );
