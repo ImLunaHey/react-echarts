@@ -1,6 +1,6 @@
 {
   "name": "@imlunahey/react-echarts",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Apache ECharts for React — a thin, opinionated wrapper",
   "license": "MIT",
   "type": "module",
