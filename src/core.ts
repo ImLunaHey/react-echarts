@@ -6,6 +6,7 @@ import {
   createDisconnect,
   createUseChart,
 } from './factory';
+import { createSparkline } from './sparkline';
 import type { EChartsLike } from './types';
 
 const echartsApi = echartsCore as unknown as EChartsLike;
@@ -27,6 +28,9 @@ const echartsApi = echartsCore as unknown as EChartsLike;
  * <Chart option={...} />
  */
 export const Chart = createChart(echartsApi);
+
+/** {@link Sparkline} bound to `echarts/core`. */
+export const Sparkline = createSparkline(Chart);
 
 /** Hook variant of {@link Chart}, bound to `echarts/core`. */
 export const useChart = createUseChart(echartsApi);
@@ -57,3 +61,15 @@ export {
   createDisconnect,
   createUseChart,
 } from './factory';
+export { createZoom } from './zoom';
+export type { CreateZoomConfig, ZoomBindings, ZoomRange } from './zoom';
+export { useResolvedColors } from './useResolvedColors';
+export type { UseResolvedColorsOptions } from './useResolvedColors';
+export { usePinnedTooltip } from './usePinnedTooltip';
+export type {
+  PinnedPosition,
+  UsePinnedTooltipOptions,
+  UsePinnedTooltipResult,
+} from './usePinnedTooltip';
+export { createSparkline } from './sparkline';
+export type { SparklineDatum, SparklineProps, SparklineSeries, SparklineVariant } from './sparkline';

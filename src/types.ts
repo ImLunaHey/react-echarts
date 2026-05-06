@@ -59,7 +59,10 @@ export type ChartLoading =
  * below so the library can target either the full or core build.
  */
 export type EChartsInstance = {
-  setOption(option: unknown, opts?: { notMerge?: boolean; lazyUpdate?: boolean; silent?: boolean }): void;
+  setOption(
+    option: unknown,
+    opts?: { notMerge?: boolean; lazyUpdate?: boolean; silent?: boolean; replaceMerge?: string | string[] }
+  ): void;
   resize(opts?: { width?: number | 'auto'; height?: number | 'auto'; silent?: boolean }): void;
   dispatchAction(payload: { type: string } & Record<string, unknown>): void;
   clear(): void;
@@ -150,6 +153,14 @@ export type ChartProps = {
   locale?: EChartsLocale;
   /** If true, replaces the previous option entirely instead of merging. Default false. */
   notMerge?: boolean;
+  /**
+   * Component types whose previous values are dropped on update,
+   * instead of being merged. Useful when an array (e.g. `series`)
+   * shrinks — by default ECharts keeps removed entries around.
+   * Pass a string or a list of types like `'series'` or `['series',
+   * 'graphic']`. See ECharts `setOption` docs for details.
+   */
+  replaceMerge?: string | string[];
   /** If true, defers the redraw to the next frame. Default false. */
   lazyUpdate?: boolean;
   /** If true, suppresses events triggered by the option update. Default false. */

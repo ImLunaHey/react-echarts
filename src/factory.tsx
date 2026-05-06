@@ -123,6 +123,7 @@ export const createUseChart = (echarts: EChartsLike) => {
         notMerge: current.notMerge ?? false,
         lazyUpdate: current.lazyUpdate ?? false,
         silent: current.silent ?? false,
+        ...(current.replaceMerge !== undefined ? { replaceMerge: current.replaceMerge } : {}),
       });
       applyLoading(instance, current.loading);
       current.onInit?.(instance);
@@ -138,7 +139,7 @@ export const createUseChart = (echarts: EChartsLike) => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initSig]);
 
-    const { option, notMerge, lazyUpdate, silent } = props;
+    const { option, notMerge, lazyUpdate, silent, replaceMerge } = props;
     useIsoLayoutEffect(() => {
       const instance = instanceRef.current;
       if (!instance || instance.isDisposed()) return;
@@ -146,8 +147,9 @@ export const createUseChart = (echarts: EChartsLike) => {
         notMerge: notMerge ?? false,
         lazyUpdate: lazyUpdate ?? false,
         silent: silent ?? false,
+        ...(replaceMerge !== undefined ? { replaceMerge } : {}),
       });
-    }, [option, notMerge, lazyUpdate, silent]);
+    }, [option, notMerge, lazyUpdate, silent, replaceMerge]);
 
     const { group } = props;
     useIsoLayoutEffect(() => {

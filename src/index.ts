@@ -6,6 +6,7 @@ import {
   createDisconnect,
   createUseChart,
 } from './factory';
+import { createSparkline } from './sparkline';
 import type { EChartsLike } from './types';
 
 const echartsApi = echarts as unknown as EChartsLike;
@@ -24,6 +25,12 @@ const echartsApi = echarts as unknown as EChartsLike;
  * />
  */
 export const Chart = createChart(echartsApi);
+
+/**
+ * No-axes, no-tooltip, fills-its-container chart preset for use as a
+ * background sparkline (e.g. behind a big number on a metric tile).
+ */
+export const Sparkline = createSparkline(Chart);
 
 /**
  * Imperative hook bound to the full `echarts` build. Use when you
@@ -68,3 +75,15 @@ export {
   createDisconnect,
   createUseChart,
 } from './factory';
+export { createZoom } from './zoom';
+export type { CreateZoomConfig, ZoomBindings, ZoomRange } from './zoom';
+export { useResolvedColors } from './useResolvedColors';
+export type { UseResolvedColorsOptions } from './useResolvedColors';
+export { usePinnedTooltip } from './usePinnedTooltip';
+export type {
+  PinnedPosition,
+  UsePinnedTooltipOptions,
+  UsePinnedTooltipResult,
+} from './usePinnedTooltip';
+export { createSparkline } from './sparkline';
+export type { SparklineDatum, SparklineProps, SparklineSeries, SparklineVariant } from './sparkline';
