@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/ImLunaHey/react-echarts/compare/v1.0.0...v1.1.0) (2026-05-06)
+
+
+### Features
+
+* add zoom, hooks, sparkline, and replaceMerge support ([3b1f320](https://github.com/ImLunaHey/react-echarts/commit/3b1f320edf459b078e9015474deb87dffecd6c6c))
+
 ## 1.0.0 (2026-04-30)
 
 
