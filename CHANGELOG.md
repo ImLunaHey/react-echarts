@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/ImLunaHey/react-echarts/compare/v1.1.0...v1.2.0) (2026-05-13)
+
+
+### Features
+
+* add resizeThrottleMs option to cap ResizeObserver redraw rate ([17a2048](https://github.com/ImLunaHey/react-echarts/commit/17a2048dd11911794e7197bf9c2181f3af6c4c9c))
+
 ## [1.1.0](https://github.com/ImLunaHey/react-echarts/compare/v1.0.0...v1.1.0) (2026-05-06)
 
 
