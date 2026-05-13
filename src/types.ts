@@ -176,6 +176,18 @@ export type ChartProps = {
   onEvents?: ChartEvents;
   /** Called once with the new instance after mount. */
   onInit?: (instance: EChartsInstance) => void;
+  /**
+   * Throttle the `ResizeObserver` callback that forwards container
+   * size changes to `instance.resize()`. By default the chart
+   * redraws on every animation frame (~60 Hz) during a continuous
+   * resize — fine for a single chart, expensive on dashboards with
+   * many charts sharing a window drag. Set this to cap the redraw
+   * rate; a trailing-edge timer guarantees the final size lands
+   * after the user releases.
+   *
+   * @default undefined (rAF coalesce, ~60 Hz)
+   */
+  resizeThrottleMs?: number;
   /** className for the container div. */
   className?: string;
   /** Inline styles for the container. Defaults to `{ width: '100%', height: '100%' }`. */

@@ -70,21 +70,65 @@ export const applyLoading = (instance: EChartsInstance, loading: ChartLoading | 
 
 /**
  * Watch the container for size changes and forward them to the
- * instance. Returns a teardown that disconnects the observer. Uses
- * `requestAnimationFrame` to coalesce bursts of resize events.
+ * instance. Returns a teardown that disconnects the observer.
+ *
+ * Default behavior coalesces bursts via `requestAnimationFrame` (~60
+ * Hz). Pass `throttleMs` to instead apply a leading-edge throttle —
+ * useful on dashboards with many charts where a continuous window
+ * drag would otherwise trigger one full canvas redraw per chart per
+ * frame. A trailing-edge timer guarantees the final size lands after
+ * the user releases.
  */
-export const observeResize = (instance: EChartsInstance, container: HTMLElement): (() => void) => {
-  let frame = 0;
-  const observer = new ResizeObserver(() => {
-    if (frame !== 0) return;
-    frame = requestAnimationFrame(() => {
-      frame = 0;
-      if (!instance.isDisposed()) instance.resize();
+export const observeResize = (
+  instance: EChartsInstance,
+  container: HTMLElement,
+  throttleMs?: number,
+): (() => void) => {
+  if (!throttleMs || throttleMs <= 0) {
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      if (frame !== 0) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (!instance.isDisposed()) instance.resize();
+      });
     });
+    observer.observe(container);
+    return () => {
+      if (frame !== 0) cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }
+
+  let lastFire = 0;
+  let trailing: ReturnType<typeof setTimeout> | undefined;
+  const fire = () => {
+    if (instance.isDisposed()) return;
+    instance.resize();
+    lastFire = Date.now();
+  };
+  const observer = new ResizeObserver(() => {
+    const wait = throttleMs - (Date.now() - lastFire);
+    if (wait <= 0) {
+      if (trailing !== undefined) {
+        clearTimeout(trailing);
+        trailing = undefined;
+      }
+      fire();
+      return;
+    }
+    // Trailing-edge: schedule one final fire after the throttle
+    // window closes so the chart lands at the *final* size when a
+    // burst of resize events ends.
+    if (trailing !== undefined) return;
+    trailing = setTimeout(() => {
+      trailing = undefined;
+      fire();
+    }, wait);
   });
   observer.observe(container);
   return () => {
-    if (frame !== 0) cancelAnimationFrame(frame);
+    if (trailing !== undefined) clearTimeout(trailing);
     observer.disconnect();
   };
 };

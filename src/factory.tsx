@@ -128,7 +128,7 @@ export const createUseChart = (echarts: EChartsLike) => {
       applyLoading(instance, current.loading);
       current.onInit?.(instance);
 
-      const stopResize = observeResize(instance, el);
+      const stopResize = observeResize(instance, el, current.resizeThrottleMs);
 
       return () => {
         stopResize();
