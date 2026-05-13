@@ -20,14 +20,27 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org/
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
+      # Trusted Publishing needs npm >= 11.5.1 to perform the OIDC
+      # handshake. Node 22 ships with npm 10.x which silently falls
+      # back to anonymous auth → 404 on PUT. Bump explicitly.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+
+      # Run `prepublishOnly` (build + check:exports) via pnpm, then
+      # have npm itself upload the tarball so the OIDC token gets
+      # attached to the request. `pnpm publish` shells out to npm
+      # internally but doesn't always forward the trusted-publishing
+      # flow cleanly across pnpm versions.
+      - name: Pack
+        run: pnpm pack
       - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks
+        run: npm publish --provenance --access public ./*.tgz
 
       - uses: actions/setup-node@v4
         with:
