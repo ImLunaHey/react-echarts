@@ -18,25 +18,23 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
-      # NOTE: no `registry-url` here. `actions/setup-node` writes an
-      # `.npmrc` with `_authToken=${NODE_AUTH_TOKEN}` whenever it's
-      # given a registry-url. Under trusted publishing there's no
-      # NODE_AUTH_TOKEN, so the placeholder ends up as the literal
-      # auth value, npm treats the request as anonymous, and the
-      # registry returns 404 instead of triggering the OIDC handshake.
-      # Letting the npm CLI manage auth itself is the supported path.
+      # Node 24 ships with npm 11+, which has the OIDC trusted-publishing
+      # handshake built in. Earlier Node majors bundle npm 10.x and the
+      # in-place `npm install -g npm@latest` upgrade is flaky on the
+      # GHA toolcache (`promise-retry` module missing on 22.22.2).
+      #
+      # No `registry-url` here. `actions/setup-node` writes an `.npmrc`
+      # with `_authToken=${NODE_AUTH_TOKEN}` whenever it's given a
+      # registry-url. Under trusted publishing there's no
+      # NODE_AUTH_TOKEN, so the placeholder ends up as the literal auth
+      # value, npm treats the request as anonymous, and the registry
+      # returns 404 instead of triggering the OIDC handshake.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-
-      # Trusted Publishing needs npm >= 11.5.1 to perform the OIDC
-      # handshake. Node 22 ships with npm 10.x which silently falls
-      # back to anonymous auth → 404 on PUT. Bump explicitly.
-      - name: Upgrade npm for trusted publishing
-        run: npm install -g npm@latest
 
       - name: Build
         run: pnpm build
