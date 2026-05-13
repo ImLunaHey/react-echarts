@@ -18,10 +18,16 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
+      # NOTE: no `registry-url` here. `actions/setup-node` writes an
+      # `.npmrc` with `_authToken=${NODE_AUTH_TOKEN}` whenever it's
+      # given a registry-url. Under trusted publishing there's no
+      # NODE_AUTH_TOKEN, so the placeholder ends up as the literal
+      # auth value, npm treats the request as anonymous, and the
+      # registry returns 404 instead of triggering the OIDC handshake.
+      # Letting the npm CLI manage auth itself is the supported path.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org/
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -32,15 +38,14 @@ jobs:
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
 
-      # Run `prepublishOnly` (build + check:exports) via pnpm, then
-      # have npm itself upload the tarball so the OIDC token gets
-      # attached to the request. `pnpm publish` shells out to npm
-      # internally but doesn't always forward the trusted-publishing
-      # flow cleanly across pnpm versions.
-      - name: Pack
-        run: pnpm pack
+      - name: Build
+        run: pnpm build
+
+      # `npm publish` (npm 11+) auto-detects GHA, calls the OIDC
+      # endpoint, exchanges the token for a short-lived publish token,
+      # and attaches provenance metadata. No NODE_AUTH_TOKEN required.
       - name: Publish to npm
-        run: npm publish --provenance --access public ./*.tgz
+        run: npm publish --provenance --access public
 
       - uses: actions/setup-node@v4
         with:
