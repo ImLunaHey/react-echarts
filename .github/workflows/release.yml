@@ -5,51 +5,31 @@ on:
     branches:
       - main
 
+# `actions: write` is needed so the post-release step can dispatch
+# `publish.yml` via the workflow_dispatch API. `contents: write` and
+# `pull-requests: write` are for release-please's PR/tag operations.
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   release-please:
     runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           release-type: node
 
-  publish:
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: https://registry.npmjs.org/
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - name: Publish to npm
-        run: pnpm publish --access public --no-git-checks
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: https://npm.pkg.github.com/
-
-      - name: Publish to GitHub Packages
-        run: pnpm publish --access public --no-git-checks
+      # Publishing happens in `publish.yml` (npm's trusted-publishing
+      # is wired to that workflow file only — see the npm package's
+      # trusted-publisher configuration). Tags pushed by release-
+      # please via the default GITHUB_TOKEN don't trigger downstream
+      # workflows, so we dispatch `publish.yml` explicitly once a
+      # release has actually been created.
+      - name: Trigger publish workflow
+        if: ${{ steps.release.outputs.release_created }}
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run publish.yml --ref main
