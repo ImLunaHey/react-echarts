@@ -18,6 +18,7 @@ import {
   observeResize,
   type InitConfig,
 } from './instance';
+import { applySmartTooltipPosition } from './smartTooltipPosition';
 import type {
   ChartHandle,
   ChartProps,
@@ -46,10 +47,11 @@ const initKey = (
   renderer: EChartsRenderer | undefined,
   locale: EChartsLocale | undefined,
   devicePixelRatio: number | undefined,
+  useDirtyRect: boolean | undefined,
 ): string => {
   const themeKey =
     typeof theme === 'string' ? `s:${theme}` : theme === undefined ? 'u' : 'o';
-  return `${themeKey}|${renderer ?? 'd'}|${locale ?? 'd'}|${devicePixelRatio ?? 'd'}`;
+  return `${themeKey}|${renderer ?? 'd'}|${locale ?? 'd'}|${devicePixelRatio ?? 'd'}|${useDirtyRect ?? 'd'}`;
 };
 
 /**
@@ -101,8 +103,13 @@ export const createUseChart = (echarts: EChartsLike) => {
       [],
     );
 
-    const { theme, renderer, locale, devicePixelRatio } = props;
-    const initSig = initKey(theme, renderer, locale, devicePixelRatio);
+    const { theme, renderer, locale, devicePixelRatio, useDirtyRect } = props;
+    const initSig = initKey(theme, renderer, locale, devicePixelRatio, useDirtyRect);
+
+    // Read the container at hover time (vs. capturing it once) so the
+    // tooltip positioner sees the current bounding rect across
+    // resizes, scrolls, and remounts.
+    const getContainer = (): HTMLElement | null => container.current;
 
     useIsoLayoutEffect(() => {
       const el = container.current;
@@ -113,13 +120,14 @@ export const createUseChart = (echarts: EChartsLike) => {
         renderer,
         devicePixelRatio,
         locale,
+        useDirtyRect,
       };
       const instance = createInstance(echarts, el, config);
       instanceRef.current = instance;
 
       const current = propsRef.current;
       if (current.group !== undefined) instance.group = current.group;
-      instance.setOption(current.option, {
+      instance.setOption(applySmartTooltipPosition(current.option, getContainer), {
         notMerge: current.notMerge ?? false,
         lazyUpdate: current.lazyUpdate ?? false,
         silent: current.silent ?? false,
@@ -143,12 +151,15 @@ export const createUseChart = (echarts: EChartsLike) => {
     useIsoLayoutEffect(() => {
       const instance = instanceRef.current;
       if (!instance || instance.isDisposed()) return;
-      instance.setOption(option, {
+      instance.setOption(applySmartTooltipPosition(option, getContainer), {
         notMerge: notMerge ?? false,
         lazyUpdate: lazyUpdate ?? false,
         silent: silent ?? false,
         ...(replaceMerge !== undefined ? { replaceMerge } : {}),
       });
+      // `getContainer` reads `container.current` lazily — stable
+      // identity, intentionally excluded from deps.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [option, notMerge, lazyUpdate, silent, replaceMerge]);
 
     const { group } = props;

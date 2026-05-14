@@ -87,3 +87,8 @@ export type {
 } from './usePinnedTooltip';
 export { createSparkline } from './sparkline';
 export type { SparklineDatum, SparklineProps, SparklineSeries, SparklineVariant } from './sparkline';
+export {
+  applySmartTooltipPosition,
+  createSmartTooltipPosition,
+} from './smartTooltipPosition';
+export type { TooltipPositionCallback } from './smartTooltipPosition';
