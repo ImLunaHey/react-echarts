@@ -16,7 +16,7 @@
  * hover time, and we use its `getBoundingClientRect()` to translate
  * the chart-local cursor into viewport coords.
  *
- * Behaviour (mirrors `apps/app/console`'s `UPlotChart.tooltipPosition`):
+ * Behaviour:
  *   1. Pick the side (left/right of cursor) based on which half of
  *      the chart the cursor sits in.
  *   2. If the preferred side would extend past the viewport, flip
