@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/ImLunaHey/react-echarts/compare/v1.2.0...v1.3.0) (2026-05-14)
+
+
+### Features
+
+* viewport-aware tooltip positioning by default ([2f34cc5](https://github.com/ImLunaHey/react-echarts/commit/2f34cc53602a10870ae404865ce8fd8b5bba1e63))
+
 ## [1.2.0](https://github.com/ImLunaHey/react-echarts/compare/v1.1.0...v1.2.0) (2026-05-13)
 
 
